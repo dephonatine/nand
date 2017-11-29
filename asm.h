@@ -1,347 +1,121 @@
 #include <stdio.h>
-#include <stdint.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-#include "asm.h"
+#include <stdint.h>
 
-#define     USAGE() { printf("USAGE: ./assemble [program.asm]\n"); exit(0);}
-#define     CHECK(argc) { if (argc < 2) { USAGE(); } }
-#define     sfree(x) { do { free(x); x=NULL; } while(0) };
-#define     smalloc(x) { do { ptr = malloc(x); if(!ptr) { exit(fprintf(stderr, "malloc error\n"));  } return ptr; } while(0) }
-#define     INSTRUCTION_C       0
-#define     INSTRUCTION_A       1
+#define     JMP         0
+#define     EQ          1
+#define     PENDING     2
+#define     DONE        3
+#define     DEST        4
+#define     COMP        5
 
-/* assembler for the Hack ISA. */
+struct list_head {
+    struct  list_head *next;
+    struct  list_head *prev;
+} __attribute__((packed));
 
-FILE *output;
+struct line_data {
+    uint8_t     *data;
+    uint8_t     *opcode;
+    uint8_t     state;
+    size_t      size;
+    uint32_t    num;
+    struct list_head list;
+} __attribute__((packed));
+
+struct symbol_data {
+    uint8_t     *symbol;
+    uint16_t    addr; 
+    struct list_head list;
+} __attribute__((packed));
+
+struct c_inst { 
+    uint8_t     *comp;
+    uint8_t     *dest;
+    uint8_t     *jump;
+    uint8_t     type;
+} __attribute__((packed));
 
 
-uint16_t g_addr;
-struct line_data *head;
-struct line_data *cur;
-struct symbol_data *symhead;
-struct symbol_data *symcur;
-uint32_t lnum;
 
+extern uint32_t lnum;
+extern struct line_data *head;
+extern struct line_data *cur;
+extern struct symbol_data *symhead;
+extern struct symbol_data *symcur;
+extern uint16_t g_addr;
+extern struct symbol_data *screen;
+extern struct symbol_data *kbd;
 
-FILE *open_file(char *file) {
-    FILE *fp = fopen(file, "r+");
-    assert(fp != -1);
-    return fp;
+/*
+void initialize_syms(void) {
+    struct symbol_data *screen = malloc(sizeof(struct symbol_data) + 1);
+    struct symbol_data *kbd = malloc(sizeof(struct symbol_data) + 1); 
+    struct symbol_data *arg = malloc(sizeof(struct symbol_data) + 1);
+    struct symbol_data *this = malloc(sizeof(struct symbol_data) + 1);
+    struct symbol_data *that = malloc(sizeof(struct symbol_data) + 1);
+    screen->symbol = "SCREEN";
+    screen->addr = 16384;
+    kbd->symbol = "KBD";
+    kbd->addr = 24576;
+    arg->symbol = "ARG";
+    arg->addr = 2;
+    this->symbol = "THIS";
+    this->addr = 3;
+    that->symbol = "THAT";
+    that->addr = 4;
+    sym_add(screen);
+    sym_add(kbd);
+    sym_add(arg);
+    sym_add(this);
+    sym_add(that);
 }
+*/
 
+uint8_t *dec2bin(uint16_t c, uint8_t *str) {
+    uint8_t *tmp = str;
+    int i = 0;
+    for(i = 15; i >= 0; i--){
+        if((c & (1 << i)) != 0){
+            sprintf(tmp, "1");
 
-uint8_t *read_file(char *file) {
-    FILE *fp = fopen(file, "r+");
-            
-    fseek(fp, 0, SEEK_END);
-    uint64_t size = ftell(fp);
-    uint8_t *buf = malloc(size + 1);
-    fseek(fp, 0, SEEK_SET);
-    fread(buf, 1, size, fp);
-    return buf;
+        }else{
+            sprintf(tmp, "0");
 
-}
-
-// initialize both list heads
-void INIT_LIST_HEAD(void) {
-    symhead = malloc(sizeof(struct symbol_data) + 1);
-    symhead->symbol = "SP";
-    symhead->list.next = NULL;
-    symhead->list.prev = NULL;
-    symcur = symhead;
-
-    head = malloc(sizeof(struct line_data) + 1);
-    head->data = "this is the list head";
-    head->list.next = NULL;
-    head->list.prev = NULL;
-    cur = head;
-    return;
-}
-
-
-struct line_data *line_add(struct line_data *new) {
-    struct line_data *tmp = cur;
-    new->list.prev = tmp;
-    new->list.next = NULL;
-    tmp->list.next = new;
-    cur = new;
-    return cur;
-}
-
-
-struct symbol_data *sym_add(struct symbol_data *new) {
-    struct symbol_data *tmp = symcur;
-    new->list.prev = tmp;
-    new->list.next = NULL;
-    tmp->list.next = new;
-    symcur = new;
-    return symcur;
-}
-
-
-struct line_data *readline(uint8_t *buf) {
-    uint8_t i = 0;
-    if(buf[i] == NULL) { return NULL; }
-    struct line_data *line = malloc(sizeof(struct line_data) + 1);
-    line->data = malloc(0x50);
-    line->opcode = malloc(18);
-    line->num = lnum;
-    lnum++;
-    while(buf[i] != 10) {
-        line->data[i] = buf[i];
-        i++;
+        } 
+    tmp++;
     }
-    line->size = i;
-
-    struct line_data *ret = line_add(line);
-
-    return ret;
+    sprintf(tmp, "\n");
+    return str;
 }
 
 
-void populate_list(uint8_t *buf) {
-    size_t offset = 0;
-    for(int i = 0; cur = readline(buf + offset); i++) {
-        offset += cur->size;
-    }
-    return;
-}
- 
-
-void show_list(struct line_data *ptr) {
-    while(ptr) {
-        printf("line %d: %s\n", ptr->num, ptr->data);
-        ptr = ptr->list.next;
-    }
-    return;
-}
-
-
-void show_syms(struct symbol_data *ptr) { 
-    while(ptr->list.next) { 
-        printf("Symbol: %s\nAddress:%d\n", ptr->symbol, ptr->addr);
-        ptr = ptr->list.next;
-    }
-}
-
-
-void handle_sym(uint8_t *sym, struct line_data *s) {
-    printf("Symbol detected: %s\n", sym);
-    printf("[^] Checking if symbol already exists.\n");
-    struct symbol_data *ptr = symhead;
-    while(ptr->list.next) {
-        if(!strcmp(sym, ptr->symbol)) { 
-            printf("[^] Symbol found. Appending corresponding opcode.\n");
-            dec2bin(ptr->addr, s->opcode);
-            printf("[DEBUG] opcode: %s\n", s->opcode);
-            return;
+void remove_white_space(uint8_t *buf) {
+    uint8_t j = 0;
+    for(int i = 0; buf[i] != 0x0A; i++) { 
+        if(buf[i] == 0x20) {
+            ++j;
         }
-        ptr = ptr->list.next;
-    }
-    
-    printf("[^] Symbol not found. Adding to table.\n");
-    
-    symcur->symbol = sym;
-    symcur->addr = g_addr;
-    dec2bin(g_addr, s->opcode);
-    g_addr++;
-    struct symbol_data *new = malloc(sizeof(struct symbol_data) + 1);
-    sym_add(new);
-
-
-    return;
-
-}
-
-
-struct c_inst *tokenize_c(uint8_t *ptr) {
-    struct c_inst *x = malloc(sizeof(struct c_inst) + 1);
-    // dest and jump are mutually exclusive
-
-    uint8_t **val1, **val2;
-    uint8_t *TOKEN = { 0 };
-
-    if(strstr(ptr, ";")) { // this breaks if for example a ';' is in comment on same line
-        x->type = JMP;
-        val1 = &x->comp;
-        val2 = &x->jump;
-        TOKEN = "\r;";
-    }
-    else { 
-        x->type = EQ;
-        val1 = &x->dest;
-        val2 = &x->comp;
-        x->jump = "000";
-        TOKEN = "\r=";
-    }
-
-    uint8_t *tok = strtok(ptr, TOKEN);
-    *val1 = tok;
-    uint8_t *tok2 = strtok(NULL, TOKEN);
-    strtok(tok2, "/");
-    strtok(tok2, " ");
-    *val2 = tok2;
-    printf("val1: %s\n", *val1);
-    printf("val2: %s\n", *val2);
-    return x;
-}
-
-
-uint8_t check_opcode(uint8_t type, struct c_inst *instruction) {
-    uint8_t k = 0;
-    uint8_t **mnem;
-    uint8_t *val;
-    switch(type) { 
-        case JMP:
-            k = 7;
-            mnem = jmp_mnemonic;
-            val = instruction->jump;
-            break;
-        case DEST:
-            k = 8;
-            mnem = dest_mnemonic;
-            val = instruction->dest;
-            break;
-    
-        case COMP:
-            k = 28;
-            mnem = c_mnemonic;
-            val = instruction->comp;
-            break;
-    }
-    
-    for(int i = 0; i < k; i++) { 
-        if(!strcmp(val, mnem[i])) { 
-            return i;
+        else { 
+            buf[i-j] = buf[i];
         }
-    
-    }
 
-}
-
-
-void handle_c(struct line_data *ptr) { 
-    struct c_inst *instruction = tokenize_c(ptr->data);
-    uint8_t cidx = check_opcode(COMP, instruction);
-    sprintf(ptr->opcode, "111");
-    if(instruction->type == JMP) {
-        strcat(ptr->opcode, c_opcode[cidx]);
-        strcat(ptr->opcode, "000");
-        uint8_t jidx = check_opcode(JMP, instruction);
-        strcat(ptr->opcode, jmp_opcode[jidx]);
-        return;
-    }
-    else { 
-        strcat(ptr->opcode, c_opcode[cidx]);
-        uint8_t didx = check_opcode(DEST, instruction);
-        strcat(ptr->opcode, dest_opcode[didx]);
-        strcat(ptr->opcode, "000\n");
-        return;
+    buf[i] = NULL;
     
     }
 }
 
 
-void a_inst(struct line_data *ptr) {
-    if(!strstr(ptr->data, "@")) { goto bail; }
-    char *tok = strtok(ptr->data, "@");
-    strtok(ptr->data, "/");
-    strtok(ptr->data, " ");
-    printf("ADDRESS: %s\n", tok);
 
-    if((tok[0] <= 0x5A && tok[0] >= 0x41) || (tok[0] <= 0x7A && tok[0] >= 0x61)) {
-        handle_sym(tok, ptr);
-        ptr->state = DONE;
-        return;
-    }
-    else {
-        long val = strtol(tok, NULL, 10);
-        dec2bin((uint16_t)val, ptr->opcode);
-        ptr->state = DONE;
-        return;
-    }
-bail:
-    return;
-}
+/* mnemonic commands and their corresponding opcodes */
+
+const uint8_t *c_mnemonic[] = {"0", "1", "-1", "D", "A", "!D", "!A", "-D", "-A", "D+1", "A+1", "D-1", "A-1", "D+A", "D-A", "A-D", "D&A", "D|A", "M", "!M", "-M", "M+1", "M-1", "D+M", "D-M", "M-D", "D&M", "D|M"};
+
+const uint8_t *c_opcode[] = {"0101010", "0111111", "0111010", "0001100", "0110000", "0001101", "0110001", "0001111", "0110011", "0011111", "0110111", "0001110", "0110010", "0000010", "0010011", "0000111", "0000000", "0010101", "1110000", "1110001", "1110011", "1110111", "1110010", "1000010", "1010011", "1000111", "1000000", "1010101"};
 
 
-// modular for debugging purposes. remove type parameter later.
-void handle_all_inst(struct line_data *start, uint8_t type) {
-    void *ptr[] = {&handle_c, &a_inst};
-    void (*func)(struct line_data *) = ptr[type];
-    struct line_data *tmp = start;
-    while(tmp) {
-        if (tmp->state == DONE || tmp->data[0] == NULL) { goto next; }
-        func(tmp);
-next:
-        tmp = tmp->list.next;
-    }
+const uint8_t *dest_mnemonic[] = {"0", "M", "D", "MD", "A", "AM", "AD", "AMD"};
+const uint8_t *dest_opcode[] = {"000", "001", "010", "011", "100", "101", "110", "111"};
+const uint8_t *jmp_mnemonic[] = {"JGT", "JEQ", "JGE", "JLT", "JNE", "JLE", "JMP"};
+const uint8_t *jmp_opcode[] = {"001\n", "010\n", "011\n", "100\n", "101\n", "110\n", "111\n"};
 
-}
-
-
-void remove_line(struct line_data *x) { 
-    struct line_data *next;
-    struct line_data *prev;
-    x->list.next = next;
-    x->list.prev = prev;
-    next->list.prev = prev;
-    prev->list.next = next;
-    free(x);
-}
-
-
-void flush_file(struct line_data *ptr, char *arg) {
-    uint8_t *tok = strtok(arg, ".");
-    uint8_t *fout = malloc(0x24);
-    sprintf(fout, "%s.hack", tok);
-    printf("%s\n", fout);
-    output = fopen(fout, "w+");
-    while(ptr) {
-        fprintf(output, ptr->opcode);
-        ptr = ptr->list.next;
-    }
-}
-
-void first_pass(struct line_data *ptr) { 
-    while(ptr) { 
-        if(strstr(ptr->data, ")")) {
-            uint8_t *tok = strtok(ptr->data, ")");
-            strtok(tok, "(");
-            struct symbol_data *sym = malloc(sizeof(struct symbol_data) + 1);
-            sym->symbol = tok;
-            
-
-        }
-        ptr = ptr->list.next;
-    }
-
-}
-
-
-void main(int argc, char *argv[]) {
-    CHECK(argc);
-    if(!strstr(argv[1], ".asm")) { USAGE(); }
-    lnum = 0;
-    g_addr = 16; // Symbols  begin at memory address 16.
-    uint8_t *buf = read_file(argv[1]);
-    INIT_LIST_HEAD();
-    for(int i = 0; i < 10; i++) { 
-        printf("%d ", buf[i]);
-    }
-    populate_list(buf);
-    struct line_data *ptr = head;
-    struct line_data *strt = ptr->list.next;
- //   handle_all_inst(ptr, INSTRUCTION_A);
- //   handle_all_inst(strt, INSTRUCTION_C);
- //   flush_file(strt, argv[1]);
-    show_list(strt);
-    // symbols already defined by the ISA
-
-
-
-
-}
