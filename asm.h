@@ -29,12 +29,14 @@ struct symbol_data {
     struct list_head list;
 } __attribute__((packed));
 
+
 struct c_inst { 
     uint8_t     *comp;
     uint8_t     *dest;
     uint8_t     *jump;
     uint8_t     type;
 } __attribute__((packed));
+
 
 
 
@@ -47,30 +49,31 @@ extern uint16_t g_addr;
 extern struct symbol_data *screen;
 extern struct symbol_data *kbd;
 
-/*
-void initialize_syms(void) {
-    struct symbol_data *screen = malloc(sizeof(struct symbol_data) + 1);
-    struct symbol_data *kbd = malloc(sizeof(struct symbol_data) + 1); 
-    struct symbol_data *arg = malloc(sizeof(struct symbol_data) + 1);
-    struct symbol_data *this = malloc(sizeof(struct symbol_data) + 1);
-    struct symbol_data *that = malloc(sizeof(struct symbol_data) + 1);
-    screen->symbol = "SCREEN";
-    screen->addr = 16384;
-    kbd->symbol = "KBD";
-    kbd->addr = 24576;
-    arg->symbol = "ARG";
-    arg->addr = 2;
-    this->symbol = "THIS";
-    this->addr = 3;
-    that->symbol = "THAT";
-    that->addr = 4;
-    sym_add(screen);
-    sym_add(kbd);
-    sym_add(arg);
-    sym_add(this);
-    sym_add(that);
+#define INIT_SYMS() {\
+    struct symbol_data *screen = malloc(sizeof(struct symbol_data) + 1);\
+    struct symbol_data *kbd = malloc(sizeof(struct symbol_data) + 1); \
+    struct symbol_data *arg = malloc(sizeof(struct symbol_data) + 1);\
+    struct symbol_data *this = malloc(sizeof(struct symbol_data) + 1);\
+    struct symbol_data *that = malloc(sizeof(struct symbol_data) + 1);\
+    struct symbol_data *next = malloc(sizeof(struct symbol_data) + 1);\
+    screen->symbol = "SCREEN";\
+    screen->addr = 16384;\
+    kbd->symbol = "KBD";\
+    kbd->addr = 24576;\
+    arg->symbol = "ARG";\
+    arg->addr = 2;\
+    this->symbol = "THIS";\
+    this->addr = 3;\
+    that->symbol = "THAT";\
+    that->addr = 4;\
+    sym_add(screen);\
+    sym_add(kbd);\
+    sym_add(arg);\
+    sym_add(this);\
+    sym_add(that);\
+    sym_add(next);\
 }
-*/
+
 
 uint8_t *dec2bin(uint16_t c, uint8_t *str) {
     uint8_t *tmp = str;
