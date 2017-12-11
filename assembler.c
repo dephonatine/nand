@@ -24,7 +24,6 @@ uint32_t lnum;
 uint32_t sym_count;
 
 
-
 FILE *open_file(char *file) {
     FILE *fp = fopen(file, "r+");
     assert(fp != -1);
@@ -127,6 +126,7 @@ void show_syms(struct symbol_data *ptr) {
     }
 }
 
+
 struct c_inst *tokenize_c(uint8_t *ptr) {
     struct c_inst *x = malloc(sizeof(struct c_inst) + 1);
     // dest and jump are mutually exclusive
@@ -215,7 +215,6 @@ void handle_c(struct line_data *ptr) {
 }
 
 
-// modular for debugging purposes. might remove type parameter later.
 void handle_all_inst(struct line_data *start) {
     struct line_data *tmp = start;
     while(tmp) {
@@ -225,17 +224,6 @@ next:
         tmp = tmp->list.next;
     }
 
-}
-
-
-void remove_line(struct line_data *x) { 
-    struct line_data *next;
-    struct line_data *prev;
-    x->list.next = next;
-    x->list.prev = prev;
-    next->list.prev = prev;
-    prev->list.next = next;
-    free(x);
 }
 
 
@@ -251,6 +239,7 @@ void flush_file(struct line_data *ptr, char *arg) {
     }
 }
 
+
 struct symbol_data *does_sym_exist(uint8_t *token) {
     struct symbol_data *s = symhead;
     while(s->list.next) {
@@ -263,9 +252,7 @@ struct symbol_data *does_sym_exist(uint8_t *token) {
 }
 
 
-
 void first_pass(struct line_data *ptr) {
-
 	while(ptr) { 
 		if(strstr(ptr->data, ")")) { 
 			uint8_t *tok = strtok(ptr->data, ")");
@@ -304,6 +291,40 @@ next2:
 	ptr = ptr->list.next;
 	}
 }
+
+
+void first_pass_exper(struct line_data *ptr) {
+    while(ptr) { 
+        if(strstr(ptr->data, ")")) { 
+            uint8_t *tok = strtok(ptr->data, ")");
+            uint8_t *tok2 = strtok(ptr->data, "\r");
+            ++tok2;
+            if(struct symbol_data *s = does_sym_exist(tok2)) { 
+                struct symbol_data *tmp = symhead;
+                while(tmp->list.next) { 
+                    if(tmp->)
+                    tmp = tmp->list.next;
+                }
+            
+            }
+        }
+
+        else if(strstr(ptr->data, "@")) { 
+            uint8_t *tok = strtok(ptr->data, "@");
+            uint8_t *tok2 = strtok(tok, "\r");
+            
+        
+        
+        }
+    
+    }
+    
+
+
+
+
+}
+
 
 void second_pass(struct line_data *ptr) { 
 	while(ptr) {

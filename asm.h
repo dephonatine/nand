@@ -61,6 +61,14 @@ extern struct symbol_data *kbd;
     struct symbol_data *this = malloc(sizeof(struct symbol_data) + 1);\
     struct symbol_data *that = malloc(sizeof(struct symbol_data) + 1);\
     struct symbol_data *next = malloc(sizeof(struct symbol_data) + 1);\
+    for(int i = 0; i < 15; i++) {\
+        uint8_t *nm = malloc(8);\
+        struct symbol_data *s = malloc(sizeof(struct symbol_data) + 1);\
+        sprintf(nm, "R%d", i);\
+        s->symbol = nm;\
+        s->addr = i;\
+        sym_add(s);\
+    }\
     screen->symbol = "SCREEN";\
     screen->addr = 16384;\
     kbd->symbol = "KBD";\
