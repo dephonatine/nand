@@ -8,6 +8,9 @@
 #define     DONE        3
 #define     DEST        4
 #define     COMP        5
+#define		VAL			6
+#define		LABEL		7
+
 
 struct list_head {
     struct  list_head *next;
@@ -26,6 +29,7 @@ struct line_data {
 struct symbol_data {
     uint8_t     *symbol;
     uint16_t    addr; 
+	uint8_t		type;
     struct list_head list;
 } __attribute__((packed));
 
@@ -49,6 +53,7 @@ extern uint16_t g_addr;
 extern struct symbol_data *screen;
 extern struct symbol_data *kbd;
 
+/* symbols defined by the ISA */
 #define INIT_SYMS() {\
     struct symbol_data *screen = malloc(sizeof(struct symbol_data) + 1);\
     struct symbol_data *kbd = malloc(sizeof(struct symbol_data) + 1); \
