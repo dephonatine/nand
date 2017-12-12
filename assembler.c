@@ -271,7 +271,6 @@ void first_pass(struct line_data *ptr) {
                 symcur->type = LABEL;
                 struct symbol_data *new = malloc(sizeof(struct symbol_data) + 1);
                 sym_add(new);
-            
             }
             ++sym_count;
             ptr->state = DONE;
@@ -279,7 +278,6 @@ void first_pass(struct line_data *ptr) {
         else if(strstr(ptr->data, "@") && ptr->data[1] > 0x3A) { 
             tok = strtok(ptr->data, "@");
             tok2 = strtok(tok, "\r");
-            /* if this symbol is not found in the table */
             if(x = does_sym_exist(tok2) == NULL) { 
                 symcur->symbol = tok2;
                 symcur->addr = g_addr;
