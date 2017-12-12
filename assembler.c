@@ -28,7 +28,6 @@ FILE *open_file(char *file) {
     return fp;
 }
 
-
 uint8_t *read_file(char *file) {
     FILE *fp = fopen(file, "r+");
             
@@ -56,7 +55,6 @@ void INIT_LIST_HEAD(void) {
     return;
 }
 
-
 struct line_data *line_add(struct line_data *new) {
     new->num = lnum;
     lnum++;
@@ -68,7 +66,6 @@ struct line_data *line_add(struct line_data *new) {
     return cur;
 }
 
-
 struct symbol_data *sym_add(struct symbol_data *new) {
     struct symbol_data *tmp = symcur;
     new->list.prev = tmp;
@@ -77,7 +74,6 @@ struct symbol_data *sym_add(struct symbol_data *new) {
     symcur = new;
     return symcur;
 }
-
 
 struct line_data *readline(uint8_t *buf) {
     uint8_t i = 0;
@@ -97,7 +93,6 @@ struct line_data *readline(uint8_t *buf) {
 
 }
 
-
 void populate_list(uint8_t *buf) {
     size_t offset = 0;
     for(int i = 0; cur = readline(buf + offset + i); i++) {
@@ -115,14 +110,12 @@ void show_list(struct line_data *ptr) {
     return;
 }
 
-
 void show_syms(struct symbol_data *ptr) { 
     while(ptr->list.next) { 
         printf("Symbol:%s\nAddress:%d\n", ptr->symbol, ptr->addr);
         ptr = ptr->list.next;
     }
 }
-
 
 struct c_inst *tokenize_c(uint8_t *ptr) {
     struct c_inst *x = malloc(sizeof(struct c_inst) + 1);
@@ -151,11 +144,10 @@ struct c_inst *tokenize_c(uint8_t *ptr) {
     strtok(tok2, "/");
     strtok(tok2, " ");
     *val2 = tok2;
-    printf("val1: %s\n", *val1);
-    printf("val2: %s\n", *val2);
+//    printf("val1: %s\n", *val1);
+//    printf("val2: %s\n", *val2);
     return x;
 }
-
 
 uint8_t check_opcode(uint8_t type, struct c_inst *instruction) {
     uint8_t k = 0;
@@ -189,7 +181,6 @@ uint8_t check_opcode(uint8_t type, struct c_inst *instruction) {
 
 }
 
-
 void handle_c(struct line_data *ptr) { 
     struct c_inst *instruction = tokenize_c(ptr->data);
     uint8_t cidx = check_opcode(COMP, instruction);
@@ -211,7 +202,6 @@ void handle_c(struct line_data *ptr) {
     }
 }
 
-
 void handle_all_inst(struct line_data *start) {
     struct line_data *tmp = start;
     while(tmp) {
@@ -222,7 +212,6 @@ next:
     }
 
 }
-
 
 void flush_file(struct line_data *ptr, char *arg) {
     uint8_t *tok = strtok(arg, ".");
@@ -236,7 +225,6 @@ void flush_file(struct line_data *ptr, char *arg) {
     }
 }
 
-
 struct symbol_data *does_sym_exist(uint8_t *token) {
     struct symbol_data *s = symhead;
     while(s->list.next) {
@@ -247,7 +235,6 @@ struct symbol_data *does_sym_exist(uint8_t *token) {
     }
     return NULL;
 }
-
 
 void first_pass(struct line_data *ptr) {
     uint8_t *tok;
@@ -307,7 +294,6 @@ void first_pass(struct line_data *ptr) {
     }    
 }
 
-
 void second_pass(struct line_data *ptr) { 
 	while(ptr) {
 		if(strstr(ptr->data, "@")) {
@@ -329,7 +315,6 @@ cont:
 
 }
 
-
 void main(int argc, char *argv[]) {
     sym_count = 0;
     CHECK(argc);
@@ -350,6 +335,4 @@ void main(int argc, char *argv[]) {
     second_pass(strt);
     handle_all_inst(strt);
     flush_file(strt, argv[1]);
-
-
 }
