@@ -8,8 +8,6 @@
 
 #define     USAGE() { printf("USAGE: ./assemble [program.asm]\n"); exit(0);}
 #define     CHECK(argc) { if (argc < 2) { USAGE(); } }
-#define     INSTRUCTION_C       0
-#define     INSTRUCTION_A       1
 
 /* assembler for the Hack ISA. */
 
@@ -43,16 +41,15 @@ uint8_t *read_file(char *file) {
 
 }
 
-// initialize both list heads
 void INIT_LIST_HEAD(void) {
     symhead = malloc(sizeof(struct symbol_data) + 1);
-    symhead->symbol = "SP";
+    symhead->symbol = "DEBUG";
     symhead->list.next = NULL;
     symhead->list.prev = NULL;
     symcur = symhead;
 
     head = malloc(sizeof(struct line_data) + 1);
-    head->data = "this is the list head";
+    head->data = "DEBUG";
     head->list.next = NULL;
     head->list.prev = NULL;
     cur = head;
@@ -253,76 +250,61 @@ struct symbol_data *does_sym_exist(uint8_t *token) {
 
 
 void first_pass(struct line_data *ptr) {
-	while(ptr) { 
-		if(strstr(ptr->data, ")")) { 
-			uint8_t *tok = strtok(ptr->data, ")");
-			uint8_t *tok2 = strtok(tok, "\r");
-			++tok2;
-			symcur->symbol = tok2;
-			symcur->addr = ptr->num - (1+sym_count);
-			symcur->type = LABEL;
-			struct symbol_data *new = malloc(sizeof(struct symbol_data) + 1);
-			sym_add(new);
-			++sym_count;
-			ptr->state = DONE;
-		}
-
-	ptr = ptr->list.next;
-
-	}
-	ptr = head;
-
-	while(ptr) { 
-		if(strstr(ptr->data, "@") && ptr->data[1] > 0x3A) { 
-			uint8_t *tok = strtok(ptr->data, "@");
-			uint8_t *tok2 = strtok(tok , "\r");
-			if(does_sym_exist(tok2)) {
-				goto next2;
-			}
-
-			symcur->symbol = tok2;
-			symcur->addr = g_addr;
-			symcur->type = VAL;
-			struct symbol_data *new = malloc(sizeof(struct symbol_data) + 1);
-			sym_add(new);
-			++g_addr;
-		}
-next2:
-	ptr = ptr->list.next;
-	}
-}
-
-
-void first_pass_exper(struct line_data *ptr) {
-    while(ptr) { 
+    uint8_t *tok;
+    uint8_t *tok2;
+    struct symbol_data *s;
+    struct symbol_data *x;
+    while(ptr) {
+        /* Problem: Label address actually have to be calculated(depending on position), and can be referenced before actually being declared. To deal with this, allow the routine that handles symbols to do as it pleases, while the other routine will detect if such an error has occured and fix it. */
+        tok, tok2 = 0;
         if(strstr(ptr->data, ")")) { 
-            uint8_t *tok = strtok(ptr->data, ")");
-            uint8_t *tok2 = strtok(ptr->data, "\r");
+            tok = strtok(ptr->data, ")");
+            tok2 = strtok(ptr->data, "\r");
             ++tok2;
-            if(struct symbol_data *s = does_sym_exist(tok2)) { 
-                struct symbol_data *tmp = symhead;
-                while(tmp->list.next) { 
-                    if(tmp->)
-                    tmp = tmp->list.next;
+            /* Symbol has already been found. Let's see if it "should" be. */
+            if(s = does_sym_exist(tok2)) { 
+                if(s->type == VAL) { 
+                    /* Discrepancy. Label takes precedence. */
+                    s->addr = ptr->num - (1+sym_count);
+                    /* Update type so this doesn't erroneously happen again. */
+                    s->type = LABEL;
+                    /* Fix address errors(g_addr was mistakenly increased).*/
+                    s = s->list.next;
+                    while(s->list.next) {
+                        if (s->type == VAL)
+                            s->addr = s->addr - 1;
+                        s = s->list.next;
+                    }
                 }
+            }
+            /* Symbol has not been found. Let's add it to the symbol table. */
+            else { 
+                symcur->symbol = tok2;
+                symcur->addr = ptr->num - (1+sym_count);
+                symcur->type = LABEL;
+                struct symbol_data *new = malloc(sizeof(struct symbol_data) + 1);
+                sym_add(new);
             
             }
+            ++sym_count;
+            ptr->state = DONE;
         }
-
-        else if(strstr(ptr->data, "@")) { 
-            uint8_t *tok = strtok(ptr->data, "@");
-            uint8_t *tok2 = strtok(tok, "\r");
-            
-        
-        
+        else if(strstr(ptr->data, "@") && ptr->data[1] > 0x3A) { 
+            tok = strtok(ptr->data, "@");
+            tok2 = strtok(tok, "\r");
+            /* if this symbol is not found in the table */
+            if(x = does_sym_exist(tok2) == NULL) { 
+                symcur->symbol = tok2;
+                symcur->addr = g_addr;
+                symcur->type = VAL;
+                struct symbol_data *new = malloc(sizeof(struct symbol_data) + 1);
+                sym_add(new);
+                ++g_addr;
+            }
         }
-    
-    }
-    
+    ptr = ptr->list.next;
 
-
-
-
+    }    
 }
 
 
@@ -351,7 +333,8 @@ cont:
 void main(int argc, char *argv[]) {
     sym_count = 0;
     CHECK(argc);
-    if(!strstr(argv[1], ".asm")) { USAGE(); }
+    if(!strstr(argv[1], ".asm"))
+        USAGE();
     lnum = 1;
     g_addr = 16;
     uint8_t *buf = read_file(argv[1]);
@@ -364,10 +347,9 @@ void main(int argc, char *argv[]) {
     struct line_data *strt = ptr->list.next;
     struct line_data *nxt = strt->list.next;
     first_pass(strt);
-	show_syms(s);
-	second_pass(strt);
-	handle_all_inst(strt);
- 	flush_file(strt, argv[1]);
+    second_pass(strt);
+    handle_all_inst(strt);
+    flush_file(strt, argv[1]);
 
 
 }

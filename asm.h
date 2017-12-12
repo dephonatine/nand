@@ -2,15 +2,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define     JMP         0
-#define     EQ          1
-#define     PENDING     2
-#define     DONE        3
-#define     DEST        4
-#define     COMP        5
-#define		VAL			6
-#define		LABEL		7
-
+#define     JMP                 0
+#define     EQ                  1
+#define     PENDING             2
+#define     DONE                3
+#define     DEST                4
+#define     COMP                5
+#define		VAL			        6
+#define		LABEL		        7
+#define     INSTRUCTION_C       8
+#define     INSTRUCTION_A       9
 
 struct list_head {
     struct  list_head *next;
@@ -40,8 +41,6 @@ struct c_inst {
     uint8_t     *jump;
     uint8_t     type;
 } __attribute__((packed));
-
-
 
 
 extern uint32_t lnum;
