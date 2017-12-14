@@ -1,1 +1,2 @@
-# "Hack" ISA Assembler
+# 'Hack' Assembler
+simple assembler for the 'Hack' ISA
