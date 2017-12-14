@@ -11,6 +11,15 @@
 
 /* assembler for the Hack ISA. */
 
+/* awsum **NEW (TM)** featurez:
+ *
+ * convenient addressing with m[xxx] or m[variable]
+ *
+ *
+ */
+
+
+
 FILE *output;
 
 uint16_t g_addr;
