@@ -86,7 +86,7 @@ extern struct symbol_data *kbd;
     sym_add(next);\
 }
 
-
+/* not mine */
 uint8_t *dec2bin(uint16_t c, uint8_t *str) {
     uint8_t *tmp = str;
     int i = 0;
