@@ -8,8 +8,8 @@
 #define     DONE                3
 #define     DEST                4
 #define     COMP                5
-#define		VAL			        6
-#define		LABEL		        7
+#define	    VAL			6
+#define	    LABEL		7
 #define     INSTRUCTION_C       8
 #define     INSTRUCTION_A       9
 
@@ -30,7 +30,7 @@ struct line_data {
 struct symbol_data {
     uint8_t     *symbol;
     uint16_t    addr; 
-	uint8_t		type;
+    uint8_t	type;
     struct list_head list;
 } __attribute__((packed));
 
@@ -103,23 +103,6 @@ uint8_t *dec2bin(uint16_t c, uint8_t *str) {
     sprintf(tmp, "\n");
     return str;
 }
-
-
-void remove_white_space(uint8_t *buf) {
-    uint8_t j = 0;
-    for(int i = 0; buf[i] != 0x0A; i++) { 
-        if(buf[i] == 0x20) {
-            ++j;
-        }
-        else { 
-            buf[i-j] = buf[i];
-        }
-
-    buf[i] = NULL;
-    
-    }
-}
-
 
 
 /* mnemonic commands and their corresponding opcodes */
