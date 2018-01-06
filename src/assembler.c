@@ -11,10 +11,9 @@
 
 /* assembler for the Hack ISA. */
 
-/* awsum **NEW (TM)** featurez:
- *
+/* todo:
  * convenient addressing with m[xxx] or m[variable]
- *
+ * 
  *
  */
 
