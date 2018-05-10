@@ -250,8 +250,9 @@ void first_pass(struct line_data *ptr) {
     struct symbol_data *s;
     struct symbol_data *x;
     while(ptr) {
-        /* Problem: Label address actually have to be calculated(depending on position), and can be referenced before actually being declared. To deal with this, allow the routine that handles symbols to do as it pleases, while the other routine will detect if such an error has occured and fix it. */
-        tok, tok2 = 0;
+	/* Problem: Label address actually have to be calculated(depending on position), and can be referenced before actually being declared. To deal with this, allow the routine that handles symbols to do as it pleases, while the other routine will detect if such an error has occured and fix it. */
+        /* also, this is very hacky and bad. */
+	tok, tok2 = 0;
         if(strstr(ptr->data, ")")) { 
             tok = strtok(ptr->data, ")");
             tok2 = strtok(ptr->data, "\r");
